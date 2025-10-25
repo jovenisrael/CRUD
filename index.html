@@ -57,7 +57,7 @@
         .section {
             margin-bottom: 50px;
         }
-        .protected-code {
+        /* .protected-code {
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
@@ -78,7 +78,7 @@
             border-radius: 3px;
             font-size: 12px;
             z-index: 100;
-        }
+        } */
     </style>
 </head>
 <body>
@@ -97,9 +97,11 @@
                     <li class="nav-item"><a class="nav-link" href="#database-config">4. DB Config</a></li>
                     <li class="nav-item"><a class="nav-link" href="#main-page">5. Main Page</a></li>
                     <li class="nav-item"><a class="nav-link" href="#modal">6. Modal</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#create-backend">7. Backend</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#auth-system">8. Auth System</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#testing">9. Testing</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#create-backend">7. Create</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#update-system">8. Update</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#delete-system">9. Delete</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#auth-system">10. Auth</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#testing">11. Testing</a></li>
                 </ul>
             </div>
         </div>
@@ -109,7 +111,7 @@
         <!-- Title Section -->
         <section id="home" class="section">
             <div class="text-center">
-                <h1 class="display-4 text-primary">PHP CRUD</h1>
+                <h1 class="display-4 text-primary">Complete PHP CRUD Tutorial</h1>
                 <p class="lead">Building a Student Management System from Scratch</p>
                 <p class="text-muted">A comprehensive guide for beginners to understand every aspect of PHP CRUD operations</p>
             </div>
@@ -125,9 +127,10 @@
                     <li>Understanding PHP-MySQL connection</li>
                     <li>Building HTML forms with Bootstrap</li>
                     <li>Processing form data with PHP</li>
-                    <li>Implementing CRUD operations (Create, Read)</li>
+                    <li>Implementing complete CRUD operations (Create, Read, Update, Delete)</li>
                     <li>Security best practices with prepared statements</li>
                     <li>File organization and project structure</li>
+                    <li>User authentication and session management</li>
                 </ul>
             </div>
         </section>
@@ -734,9 +737,586 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
         </section>
 
-        <!-- Step 8: Authentication System -->
+        <!-- Step 8: Update System -->
+        <section id="update-system" class="section">
+            <h2><span class="step-number">8</span>Update System - Edit Student</h2>
+
+            <div class="alert alert-info">
+                <h4><i class="fas fa-edit"></i> What You'll Learn in This Section</h4>
+                <ul>
+                    <li>Creating a separate edit page for updating records</li>
+                    <li>Fetching existing data from database</li>
+                    <li>Pre-populating form fields with current values</li>
+                    <li>Processing UPDATE SQL queries securely</li>
+                    <li>Validating data before updating</li>
+                    <li>Redirecting after successful update</li>
+                </ul>
+            </div>
+
+            <h3>Update System Overview</h3>
+            <p>The update system allows users to modify existing student records. Unlike the create operation which uses a modal, we'll use a separate page for editing to provide more space and better user experience for data modification.</p>
+
+            <div class="file-structure">
+crud/<br>
+├── update_student.php           (Backend processing for updates)<br>
+├── pages/<br>
+│   └── edit_page.php           (Edit form page)<br>
+            </div>
+
+            <div class="why-section">
+                <h5>🤔 Why Use a Separate Page Instead of Modal?</h5>
+                <ul>
+                    <li><strong>Better UX:</strong> More space for form fields and validation messages</li>
+                    <li><strong>Focus:</strong> User can focus on editing without distractions</li>
+                    <li><strong>Flexibility:</strong> Easier to add more fields or complex validation</li>
+                    <li><strong>Bookmarkable:</strong> Users can bookmark specific edit pages</li>
+                    <li><strong>Navigation:</strong> Clearer back navigation with cancel button</li>
+                </ul>
+            </div>
+
+            <!-- Edit Page -->
+            <h3>Step 8.1: Edit Page - crud/pages/edit_page.php</h3>
+
+            <h4>Complete Code:</h4>
+            <div class="code-block protected-code">
+                <pre><code class="language-php">&lt;?php
+session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('Location: ../../auth/login.php?error=' . urlencode('Please login to access this page'));
+    exit;
+}
+
+// Check if ID parameter exists
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    header('Location: ../../index.php?error=' . urlencode('Student ID not provided'));
+    exit;
+}
+
+$student_id = intval($_GET['id']);
+
+// Get student data
+include '../../db_config/dbconn.php';
+
+$sql = "SELECT * FROM students WHERE id = ?";
+$stmt = mysqli_prepare($connection, $sql);
+
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "i", $student_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    if ($row = mysqli_fetch_assoc($result)) {
+        $first_name = $row['first_name'];
+        $last_name = $row['last_name'];
+        $age = $row['age'];
+    } else {
+        mysqli_stmt_close($stmt);
+        mysqli_close($connection);
+        header('Location: ../../index.php?error=' . urlencode('Student not found'));
+        exit;
+    }
+    mysqli_stmt_close($stmt);
+} else {
+    mysqli_close($connection);
+    header('Location: ../../index.php?error=' . urlencode('Database error'));
+    exit;
+}
+
+mysqli_close($connection);
+?&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Edit Student&lt;/title&gt;
+    &lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"&gt;
+    &lt;style&gt;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .edit-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-top: 50px;
+        }
+        .form-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin: -30px -30px 30px -30px;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="container"&gt;
+        &lt;div class="row justify-content-center"&gt;
+            &lt;div class="col-md-8 col-lg-6"&gt;
+                &lt;div class="edit-container"&gt;
+                    &lt;div class="form-header"&gt;
+                        &lt;h3 class="mb-0 text-center"&gt;Edit Student Information&lt;/h3&gt;
+                        &lt;p class="mb-0 text-center"&gt;Update student details&lt;/p&gt;
+                    &lt;/div&gt;
+
+                    &lt;?php
+                    if (isset($_GET['error'])) {
+                        echo '&lt;div class="alert alert-danger alert-dismissible fade show" role="alert"&gt;';
+                        echo htmlspecialchars($_GET['error']);
+                        echo '&lt;button type="button" class="btn-close" data-bs-dismiss="alert"&gt;&lt;/button&gt;';
+                        echo '&lt;/div&gt;';
+                    }
+                    ?&gt;
+
+                    &lt;form action="../update_student.php" method="POST"&gt;
+                        &lt;input type="hidden" name="id" value="&lt;?php echo $student_id; ?&gt;"&gt;
+
+                        &lt;div class="mb-3"&gt;
+                            &lt;label for="first_name" class="form-label"&gt;First Name&lt;/label&gt;
+                            &lt;input type="text" class="form-control" id="first_name" name="first_name"
+                                   value="&lt;?php echo htmlspecialchars($first_name); ?&gt;" required&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class="mb-3"&gt;
+                            &lt;label for="last_name" class="form-label"&gt;Last Name&lt;/label&gt;
+                            &lt;input type="text" class="form-control" id="last_name" name="last_name"
+                                   value="&lt;?php echo htmlspecialchars($last_name); ?&gt;" required&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class="mb-3"&gt;
+                            &lt;label for="age" class="form-label"&gt;Age&lt;/label&gt;
+                            &lt;input type="number" class="form-control" id="age" name="age"
+                                   value="&lt;?php echo htmlspecialchars($age); ?&gt;" min="1" required&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class="d-flex justify-content-between"&gt;
+                            &lt;a href="../../index.php" class="btn btn-secondary"&gt;Cancel&lt;/a&gt;
+                            &lt;button type="submit" class="btn btn-primary"&gt;Update Student&lt;/button&gt;
+                        &lt;/div&gt;
+                    &lt;/form&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            </div>
+
+            <h4>Edit Page Analysis</h4>
+            <div class="function-explanation">
+                <h5>Key Components:</h5>
+                <ul>
+                    <li><code>$_GET['id']</code> - Gets student ID from URL parameter</li>
+                    <li><code>intval($_GET['id'])</code> - Converts ID to integer for security</li>
+                    <li><code>SELECT * FROM students WHERE id = ?</code> - Fetches student data</li>
+                    <li><code>value="&lt;?php echo htmlspecialchars($first_name); ?&gt;"</code> - Pre-fills form fields</li>
+                    <li><code>&lt;input type="hidden" name="id"&gt;</code> - Stores student ID for update</li>
+                    <li><code>htmlspecialchars()</code> - Prevents XSS attacks when displaying data</li>
+                </ul>
+            </div>
+
+            <div class="why-section">
+                <h5>🤔 Why Check if Student Exists?</h5>
+                <ul>
+                    <li><strong>Data Integrity:</strong> Ensures we're editing a valid record</li>
+                    <li><strong>Security:</strong> Prevents manipulation of non-existent IDs</li>
+                    <li><strong>User Experience:</strong> Shows clear error if student not found</li>
+                    <li><strong>Error Prevention:</strong> Avoids blank form or database errors</li>
+                </ul>
+            </div>
+
+            <!-- Update Backend -->
+            <h3>Step 8.2: Update Backend - crud/update_student.php</h3>
+
+            <h4>Complete Code:</h4>
+            <div class="code-block protected-code">
+                <pre><code class="language-php">&lt;?php
+include '../db_config/dbconn.php';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Get POST data
+    $id = intval($_POST['id']);
+    $first_name = trim($_POST['first_name']);
+    $last_name = trim($_POST['last_name']);
+    $age = intval($_POST['age']);
+
+    // Validate input
+    if (empty($first_name) || empty($last_name) || $age &lt;= 0 || $id &lt;= 0) {
+        header('Location: pages/edit_page.php?id=' . $id . '&error=' . urlencode('Please fill in all fields with valid data'));
+        exit;
+    }
+
+    // Check if student exists
+    $check_sql = "SELECT id FROM students WHERE id = ?";
+    $check_stmt = mysqli_prepare($connection, $check_sql);
+
+    if ($check_stmt) {
+        mysqli_stmt_bind_param($check_stmt, "i", $id);
+        mysqli_stmt_execute($check_stmt);
+        $check_result = mysqli_stmt_get_result($check_stmt);
+
+        if (!mysqli_fetch_assoc($check_result)) {
+            mysqli_stmt_close($check_stmt);
+            mysqli_close($connection);
+            header('Location: ../index.php?error=' . urlencode('Student not found'));
+            exit;
+        }
+        mysqli_stmt_close($check_stmt);
+    }
+
+    // Prepare and execute update query
+    $sql = "UPDATE students SET first_name = ?, last_name = ?, age = ? WHERE id = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "ssii", $first_name, $last_name, $age, $id);
+
+        if (mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            mysqli_close($connection);
+            header('Location: ../index.php?success=' . urlencode('Student updated successfully!'));
+            exit;
+        } else {
+            mysqli_stmt_close($stmt);
+            mysqli_close($connection);
+            header('Location: pages/edit_page.php?id=' . $id . '&error=' . urlencode('Error updating student'));
+            exit;
+        }
+    } else {
+        mysqli_close($connection);
+        header('Location: pages/edit_page.php?id=' . $id . '&error=' . urlencode('Error preparing statement'));
+        exit;
+    }
+} else {
+    header('Location: ../index.php?error=' . urlencode('Invalid request method'));
+    exit;
+}
+?&gt;</code></pre>
+            </div>
+
+            <h4>Update Backend Analysis</h4>
+            <div class="function-explanation">
+                <h5>Update Process:</h5>
+                <ul>
+                    <li><code>intval($_POST['id'])</code> - Converts ID to integer</li>
+                    <li><code>trim()</code> - Removes whitespace from input</li>
+                    <li><code>Validation</code> - Checks if all fields are valid</li>
+                    <li><code>Student Existence Check</code> - Verifies student exists before updating</li>
+                    <li><code>UPDATE students SET ... WHERE id = ?</code> - SQL update query</li>
+                    <li><code>mysqli_stmt_bind_param($stmt, "ssii")</code> - Binds parameters (string, string, int, int)</li>
+                    <li><code>Redirect on success</code> - Returns to main page with success message</li>
+                </ul>
+            </div>
+
+            <div class="why-section">
+                <h5>🤔 Why Use UPDATE with WHERE Clause?</h5>
+                <ul>
+                    <li><strong>Specificity:</strong> Updates only the targeted record</li>
+                    <li><strong>Safety:</strong> WHERE clause prevents accidental mass updates</li>
+                    <li><strong>Efficiency:</strong> Database only modifies one row</li>
+                    <li><strong>Data Integrity:</strong> Other records remain unchanged</li>
+                </ul>
+            </div>
+
+            <!-- Add Edit Button to Main Page -->
+            <h3>Step 8.3: Adding Edit Button to Main Page</h3>
+
+            <h4>Update index.php Action Column:</h4>
+            <p>In the table row where students are displayed, update the Action column:</p>
+
+            <div class="code-block protected-code">
+                <pre><code class="language-php">&lt;td&gt;
+    &lt;a href="crud/pages/edit_page.php?id=&lt;?php echo $row['id']; ?&gt;"
+       class="btn btn-sm btn-warning"&gt;Edit&lt;/a&gt;
+&lt;/td&gt;</code></pre>
+            </div>
+
+            <div class="function-explanation">
+                <h5>Button Analysis:</h5>
+                <ul>
+                    <li><code>href="crud/pages/edit_page.php?id=&lt;?php echo $row['id']; ?&gt;"</code> - Links to edit page with student ID</li>
+                    <li><code>btn btn-sm btn-warning</code> - Bootstrap classes for styling</li>
+                    <li><code>GET parameter</code> - ID passed through URL for edit page to fetch data</li>
+                </ul>
+            </div>
+
+            <div class="alert alert-success">
+                <h5>🎉 Update System Complete!</h5>
+                <p>You now have a complete update system with:</p>
+                <ul>
+                    <li>✅ Separate edit page for better UX</li>
+                    <li>✅ Data fetching from database</li>
+                    <li>✅ Form pre-population with current values</li>
+                    <li>✅ Secure UPDATE queries with prepared statements</li>
+                    <li>✅ Input validation and sanitization</li>
+                    <li>✅ Error handling and user feedback</li>
+                    <li>✅ Redirect to main page after successful update</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Step 9: Delete System -->
+        <section id="delete-system" class="section">
+            <h2><span class="step-number">9</span>Delete System - Remove Student</h2>
+
+            <div class="alert alert-info">
+                <h4><i class="fas fa-trash"></i> What You'll Learn in This Section</h4>
+                <ul>
+                    <li>Implementing secure delete functionality</li>
+                    <li>Creating confirmation modals for destructive actions</li>
+                    <li>Using JavaScript to enhance user experience</li>
+                    <li>Processing DELETE SQL queries safely</li>
+                    <li>Preventing accidental data deletion</li>
+                    <li>Providing user feedback after deletion</li>
+                </ul>
+            </div>
+
+            <h3>Delete System Overview</h3>
+            <p>The delete system allows users to remove student records from the database. Since deletion is a destructive action that cannot be undone, we implement a confirmation modal to prevent accidental deletions.</p>
+
+            <div class="why-section">
+                <h5>🤔 Why Use Confirmation Modal for Delete?</h5>
+                <ul>
+                    <li><strong>Safety:</strong> Prevents accidental deletions</li>
+                    <li><strong>User Control:</strong> Gives users a chance to reconsider</li>
+                    <li><strong>Clarity:</strong> Shows exactly what will be deleted</li>
+                    <li><strong>Professional:</strong> Industry standard practice for destructive actions</li>
+                    <li><strong>User Experience:</strong> Reduces user anxiety about making mistakes</li>
+                </ul>
+            </div>
+
+            <!-- Delete Backend -->
+            <h3>Step 9.1: Delete Backend - crud/delete_student.php</h3>
+
+            <h4>Complete Code:</h4>
+            <div class="code-block protected-code">
+                <pre><code class="language-php">&lt;?php
+include '../db_config/dbconn.php';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Get POST data
+    $id = intval($_POST['id']);
+
+    // Validate input
+    if ($id &lt;= 0) {
+        header('Location: ../index.php?error=' . urlencode('Invalid student ID'));
+        exit;
+    }
+
+    // Check if student exists
+    $check_sql = "SELECT id FROM students WHERE id = ?";
+    $check_stmt = mysqli_prepare($connection, $check_sql);
+
+    if ($check_stmt) {
+        mysqli_stmt_bind_param($check_stmt, "i", $id);
+        mysqli_stmt_execute($check_stmt);
+        $check_result = mysqli_stmt_get_result($check_stmt);
+
+        if (!mysqli_fetch_assoc($check_result)) {
+            mysqli_stmt_close($check_stmt);
+            mysqli_close($connection);
+            header('Location: ../index.php?error=' . urlencode('Student not found'));
+            exit;
+        }
+        mysqli_stmt_close($check_stmt);
+    }
+
+    // Prepare and execute delete query
+    $sql = "DELETE FROM students WHERE id = ?";
+    $stmt = mysqli_prepare($connection, $sql);
+
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $id);
+
+        if (mysqli_stmt_execute($stmt)) {
+            mysqli_stmt_close($stmt);
+            mysqli_close($connection);
+            header('Location: ../index.php?success=' . urlencode('Student deleted successfully!'));
+            exit;
+        } else {
+            mysqli_stmt_close($stmt);
+            mysqli_close($connection);
+            header('Location: ../index.php?error=' . urlencode('Error deleting student'));
+            exit;
+        }
+    } else {
+        mysqli_close($connection);
+        header('Location: ../index.php?error=' . urlencode('Error preparing statement'));
+        exit;
+    }
+} else {
+    header('Location: ../index.php?error=' . urlencode('Invalid request method'));
+    exit;
+}
+?&gt;</code></pre>
+            </div>
+
+            <h4>Delete Backend Analysis</h4>
+            <div class="function-explanation">
+                <h5>Delete Process:</h5>
+                <ul>
+                    <li><code>intval($_POST['id'])</code> - Converts ID to integer for security</li>
+                    <li><code>$id &lt;= 0</code> - Validates that ID is positive</li>
+                    <li><code>Student Existence Check</code> - Verifies student exists before deleting</li>
+                    <li><code>DELETE FROM students WHERE id = ?</code> - SQL delete query</li>
+                    <li><code>mysqli_stmt_bind_param($stmt, "i", $id)</code> - Binds ID parameter</li>
+                    <li><code>Prepared Statement</code> - Prevents SQL injection</li>
+                    <li><code>Redirect on success</code> - Returns to main page with success message</li>
+                </ul>
+            </div>
+
+            <div class="why-section">
+                <h5>🤔 Why Check if Student Exists Before Deleting?</h5>
+                <ul>
+                    <li><strong>Error Prevention:</strong> Avoids deleting non-existent records</li>
+                    <li><strong>User Feedback:</strong> Provides clear error if student not found</li>
+                    <li><strong>Data Integrity:</strong> Ensures we're deleting valid records</li>
+                    <li><strong>Security:</strong> Prevents manipulation attempts</li>
+                </ul>
+            </div>
+
+            <!-- Delete Modal and Button -->
+            <h3>Step 9.2: Delete Confirmation Modal</h3>
+
+            <h4>Add Delete Modal to index.php (before closing &lt;/body&gt; tag):</h4>
+            <div class="code-block protected-code">
+                <pre><code class="language-html">&lt;!-- Delete Confirmation Modal --&gt;
+&lt;div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true"&gt;
+    &lt;div class="modal-dialog"&gt;
+        &lt;div class="modal-content"&gt;
+            &lt;div class="modal-header bg-danger text-white"&gt;
+                &lt;h5 class="modal-title" id="deleteModalLabel"&gt;Confirm Delete&lt;/h5&gt;
+                &lt;button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"&gt;&lt;/button&gt;
+            &lt;/div&gt;
+            &lt;div class="modal-body"&gt;
+                &lt;p&gt;Are you sure you want to delete this student?&lt;/p&gt;
+                &lt;p&gt;&lt;strong id="studentName"&gt;&lt;/strong&gt;&lt;/p&gt;
+                &lt;p class="text-danger"&gt;&lt;small&gt;This action cannot be undone.&lt;/small&gt;&lt;/p&gt;
+            &lt;/div&gt;
+            &lt;div class="modal-footer"&gt;
+                &lt;button type="button" class="btn btn-secondary" data-bs-dismiss="modal"&gt;Cancel&lt;/button&gt;
+                &lt;form id="deleteForm" action="crud/delete_student.php" method="POST" style="display: inline;"&gt;
+                    &lt;input type="hidden" name="id" id="deleteStudentId"&gt;
+                    &lt;button type="submit" class="btn btn-danger"&gt;Delete&lt;/button&gt;
+                &lt;/form&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+    function confirmDelete(id, name) {
+        document.getElementById('deleteStudentId').value = id;
+        document.getElementById('studentName').textContent = name;
+        var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        deleteModal.show();
+    }
+&lt;/script&gt;</code></pre>
+            </div>
+
+            <h4>Delete Modal Analysis</h4>
+            <div class="function-explanation">
+                <h5>Modal Components:</h5>
+                <ul>
+                    <li><code>bg-danger text-white</code> - Red header to indicate destructive action</li>
+                    <li><code>&lt;strong id="studentName"&gt;</code> - Displays student name to be deleted</li>
+                    <li><code>&lt;input type="hidden" name="id" id="deleteStudentId"&gt;</code> - Stores student ID</li>
+                    <li><code>confirmDelete(id, name)</code> - JavaScript function to show modal</li>
+                    <li><code>document.getElementById('deleteStudentId').value = id</code> - Sets ID in form</li>
+                    <li><code>new bootstrap.Modal()</code> - Creates and shows modal</li>
+                </ul>
+            </div>
+
+            <div class="why-section">
+                <h5>🤔 Why Use JavaScript for Delete Confirmation?</h5>
+                <ul>
+                    <li><strong>Dynamic Content:</strong> Shows specific student information</li>
+                    <li><strong>No Page Reload:</strong> Modal appears instantly without refresh</li>
+                    <li><strong>Better UX:</strong> Smooth interaction without navigation</li>
+                    <li><strong>Flexible:</strong> Can easily customize confirmation logic</li>
+                </ul>
+            </div>
+
+            <!-- Delete Button -->
+            <h3>Step 9.3: Adding Delete Button to Main Page</h3>
+
+            <h4>Update index.php Action Column:</h4>
+            <p>In the table row where students are displayed, add the delete button next to the edit button:</p>
+
+            <div class="code-block protected-code">
+                <pre><code class="language-php">&lt;td&gt;
+    &lt;a href="crud/pages/edit_page.php?id=&lt;?php echo $row['id']; ?&gt;"
+       class="btn btn-sm btn-warning"&gt;Edit&lt;/a&gt;
+    &lt;button onclick="confirmDelete(&lt;?php echo $row['id']; ?&gt;, '&lt;?php echo htmlspecialchars($row['first_name'] . ' ' . $row['last_name']); ?&gt;')"
+            class="btn btn-sm btn-danger"&gt;Delete&lt;/button&gt;
+&lt;/td&gt;</code></pre>
+            </div>
+
+            <div class="function-explanation">
+                <h5>Button Analysis:</h5>
+                <ul>
+                    <li><code>onclick="confirmDelete(...)"</code> - Calls JavaScript function on click</li>
+                    <li><code>&lt;?php echo $row['id']; ?&gt;</code> - Passes student ID to function</li>
+                    <li><code>htmlspecialchars($row['first_name'] . ' ' . $row['last_name'])</code> - Passes safe student name</li>
+                    <li><code>btn btn-sm btn-danger</code> - Bootstrap classes for red delete button</li>
+                </ul>
+            </div>
+
+            <h3>Complete Action Column Example</h3>
+            <p>Your complete table row in index.php should look like this:</p>
+
+            <div class="code-block protected-code">
+                <pre><code class="language-php">&lt;tr&gt;
+    &lt;td&gt;&lt;?php echo $row['id']; ?&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;?php echo $row['first_name'] . ' ' . $row['last_name']; ?&gt;&lt;/td&gt;
+    &lt;td&gt;&lt;?php echo $row['age']; ?&gt;&lt;/td&gt;
+    &lt;td&gt;
+        &lt;a href="crud/pages/edit_page.php?id=&lt;?php echo $row['id']; ?&gt;"
+           class="btn btn-sm btn-warning"&gt;Edit&lt;/a&gt;
+        &lt;button onclick="confirmDelete(&lt;?php echo $row['id']; ?&gt;, '&lt;?php echo htmlspecialchars($row['first_name'] . ' ' . $row['last_name']); ?&gt;')"
+                class="btn btn-sm btn-danger"&gt;Delete&lt;/button&gt;
+    &lt;/td&gt;
+&lt;/tr&gt;</code></pre>
+            </div>
+
+            <div class="alert alert-success">
+                <h5>🎉 Delete System Complete!</h5>
+                <p>You now have a complete delete system with:</p>
+                <ul>
+                    <li>✅ Secure delete functionality with prepared statements</li>
+                    <li>✅ Confirmation modal to prevent accidental deletions</li>
+                    <li>✅ JavaScript integration for smooth UX</li>
+                    <li>✅ Student existence validation</li>
+                    <li>✅ Clear visual warnings (red button and modal)</li>
+                    <li>✅ User feedback with success/error messages</li>
+                    <li>✅ Automatic page reload after deletion</li>
+                </ul>
+            </div>
+
+            <div class="alert alert-warning">
+                <h5>⚠️ Security Best Practices for Delete Operations</h5>
+                <ul>
+                    <li><strong>Always use POST method:</strong> Never delete with GET requests</li>
+                    <li><strong>Validate permissions:</strong> Ensure user has rights to delete</li>
+                    <li><strong>Use prepared statements:</strong> Prevent SQL injection</li>
+                    <li><strong>Verify existence:</strong> Check if record exists before deleting</li>
+                    <li><strong>Log deletions:</strong> Consider logging who deleted what and when</li>
+                    <li><strong>Consider soft deletes:</strong> For production, consider marking as deleted instead of removing</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Step 10: Authentication System -->
         <section id="auth-system" class="section">
-            <h2><span class="step-number">8</span>Authentication System - Login & Registration</h2>
+            <h2><span class="step-number">10</span>Authentication System - Login & Registration</h2>
 
             <div class="alert alert-info">
                 <h4><i class="fas fa-shield-alt"></i> What You'll Learn in This Section</h4>
@@ -774,7 +1354,7 @@ auth/<br>
             </div>
 
             <!-- Database Setup for Authentication -->
-            <h3>Step 8.1: Database Setup for Authentication</h3>
+            <h3>Step 10.1: Database Setup for Authentication</h3>
 
             <h4>Create Users Table</h4>
             <p>First, we need to create a users table to store user information. Create a file called <code>db_config/create_users_table.php</code>:</p>
@@ -824,7 +1404,7 @@ mysqli_close($connection);
             </div>
 
             <!-- Registration System -->
-            <h3>Step 8.2: Registration System</h3>
+            <h3>Step 10.2: Registration System</h3>
 
             <h4>Registration Form - register.php</h4>
             <div class="code-block protected-code">
@@ -1089,7 +1669,7 @@ try {
             </div>
 
             <!-- Login System -->
-            <h3>Step 8.3: Login System</h3>
+            <h3>Step 10.3: Login System</h3>
 
             <h4>Login Form - login.php</h4>
             <div class="code-block protected-code">
@@ -1274,7 +1854,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
 
             <!-- Logout System -->
-            <h3>Step 8.4: Logout System</h3>
+            <h3>Step 10.4: Logout System</h3>
 
             <h4>Logout Backend - logout.php</h4>
             <div class="code-block protected-code">
@@ -1301,7 +1881,7 @@ exit;
             </div>
 
             <!-- Security Features -->
-            <h3>Step 8.5: Security Features Explained</h3>
+            <h3>Step 10.5: Security Features Explained</h3>
 
             <h4>Password Hashing</h4>
             <div class="function-explanation">
@@ -1340,7 +1920,7 @@ exit;
             </div>
 
             <!-- Integration with Main Application -->
-            <h3>Step 8.6: Integrating Authentication with Main Application</h3>
+            <h3>Step 10.6: Integrating Authentication with Main Application</h3>
 
             <h4>Session Check for Protected Pages</h4>
             <p>To protect pages that require login, add this code at the top of your main pages:</p>
@@ -1387,9 +1967,9 @@ $user_email = $_SESSION['user_email'];
             </div>
         </section>
 
-        <!-- Step 9: Testing -->
+        <!-- Step 11: Testing -->
         <section id="testing" class="section">
-            <h2><span class="step-number">9</span>Testing Your Application</h2>
+            <h2><span class="step-number">11</span>Testing Your Application</h2>
 
             <h3>Pre-Testing Checklist</h3>
             <div class="alert alert-info">
@@ -1405,7 +1985,9 @@ $user_email = $_SESSION['user_email'];
 
             <h3>Testing Steps</h3>
 
-            <h4>1. Basic CRUD Testing</h4>
+            <h4>1. Complete CRUD Testing</h4>
+
+            <h5>Create Testing</h5>
             <ol>
                 <li><strong>Access the Application:</strong> Go to <code>http://localhost/CRUD</code></li>
                 <li><strong>Verify Page Load:</strong> You should see the main page with student list</li>
@@ -1424,6 +2006,58 @@ $user_email = $_SESSION['user_email'];
                         <li>Verify redirect to main page</li>
                         <li>Check for success message</li>
                         <li>Verify new student appears in table</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h5>Update Testing</h5>
+            <ol>
+                <li><strong>Click Edit Button:</strong> Click "Edit" button on any student row</li>
+                <li><strong>Verify Edit Page:</strong> Should redirect to edit page with student data pre-filled</li>
+                <li><strong>Test Form Pre-population:</strong>
+                    <ul>
+                        <li>Verify first name field contains current data</li>
+                        <li>Verify last name field contains current data</li>
+                        <li>Verify age field contains current data</li>
+                    </ul>
+                </li>
+                <li><strong>Test Cancel Button:</strong> Click "Cancel" - should return to main page without changes</li>
+                <li><strong>Test Form Validation:</strong>
+                    <ul>
+                        <li>Try clearing required fields</li>
+                        <li>Try entering invalid age (negative or zero)</li>
+                        <li>Verify validation messages appear</li>
+                    </ul>
+                </li>
+                <li><strong>Test Successful Update:</strong>
+                    <ul>
+                        <li>Modify student data</li>
+                        <li>Click "Update Student"</li>
+                        <li>Verify redirect to main page</li>
+                        <li>Check for success message</li>
+                        <li>Verify student data has been updated in table</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h5>Delete Testing</h5>
+            <ol>
+                <li><strong>Click Delete Button:</strong> Click "Delete" button on any student row</li>
+                <li><strong>Verify Confirmation Modal:</strong> Modal should appear with student name</li>
+                <li><strong>Test Cancel:</strong> Click "Cancel" in modal - modal should close, student not deleted</li>
+                <li><strong>Test Successful Deletion:</strong>
+                    <ul>
+                        <li>Click "Delete" button again on a student</li>
+                        <li>Click "Delete" in confirmation modal</li>
+                        <li>Verify page reloads</li>
+                        <li>Check for success message</li>
+                        <li>Verify student no longer appears in table</li>
+                    </ul>
+                </li>
+                <li><strong>Test Non-existent Student:</strong>
+                    <ul>
+                        <li>Try accessing edit page with invalid ID (e.g., edit_page.php?id=99999)</li>
+                        <li>Should redirect with "Student not found" error</li>
                     </ul>
                 </li>
             </ol>
@@ -1532,6 +2166,10 @@ $user_email = $_SESSION['user_email'];
                     <li><strong>Modal not opening:</strong> Check if Bootstrap JavaScript is loaded</li>
                     <li><strong>Form not submitting:</strong> Verify file paths in modal form action</li>
                     <li><strong>Data not inserting:</strong> Check database table structure and field names</li>
+                    <li><strong>Edit page shows blank:</strong> Verify student ID is being passed in URL</li>
+                    <li><strong>Edit page shows "Student not found":</strong> Check if student with that ID exists in database</li>
+                    <li><strong>Delete confirmation not showing:</strong> Check if JavaScript confirmDelete() function is defined</li>
+                    <li><strong>Delete not working:</strong> Verify form is using POST method and ID is being passed</li>
                     <li><strong>Login not working:</strong> Verify users table exists and has correct structure</li>
                     <li><strong>Session not persisting:</strong> Check if session_start() is called on all pages</li>
                     <li><strong>Password verification failing:</strong> Ensure password_hash() and password_verify() are used correctly</li>
@@ -1552,6 +2190,10 @@ $user_email = $_SESSION['user_email'];
                 <li>✅ Modular code organization</li>
                 <li>✅ User feedback system with success/error messages</li>
                 <li>✅ Input validation and sanitization</li>
+                <li>✅ Complete CRUD operations (Create, Read, Update, Delete)</li>
+                <li>✅ Separate edit page for better UX</li>
+                <li>✅ Delete confirmation modal for safety</li>
+                <li>✅ JavaScript integration for dynamic interactions</li>
                 <li>✅ Complete user authentication system</li>
                 <li>✅ Secure password hashing and verification</li>
                 <li>✅ Session management and user state</li>
@@ -1563,17 +2205,20 @@ $user_email = $_SESSION['user_email'];
             <div class="alert alert-success">
                 <h5>🚀 Next Steps - Expand Your Application:</h5>
                 <ul>
-                    <li>Add UPDATE functionality (edit existing students)</li>
-                    <li>Add DELETE functionality (remove students)</li>
-                    <li>Implement search and filtering</li>
+                    <li>Implement search and filtering functionality</li>
                     <li>Add pagination for large datasets</li>
                     <li>Include image upload for student photos</li>
+                    <li>Add sorting capabilities (by name, age, etc.)</li>
+                    <li>Implement export to CSV/Excel functionality</li>
                     <li>Add password reset functionality</li>
                     <li>Implement email verification for registration</li>
-                    <li>Add user roles and permissions</li>
+                    <li>Add user roles and permissions (admin, user, etc.)</li>
                     <li>Create user profile management</li>
                     <li>Add "Remember Me" functionality</li>
-                    <li>Implement account lockout after failed attempts</li>
+                    <li>Implement account lockout after failed login attempts</li>
+                    <li>Add activity logging and audit trails</li>
+                    <li>Implement soft delete (mark as deleted instead of removing)</li>
+                    <li>Add bulk operations (bulk delete, bulk update)</li>
                 </ul>
             </div>
 
@@ -1583,13 +2228,16 @@ $user_email = $_SESSION['user_email'];
                     <li><strong>MVC Separation:</strong> Separating data, presentation, and logic</li>
                     <li><strong>Security Best Practices:</strong> Prepared statements, input validation, XSS prevention</li>
                     <li><strong>Code Organization:</strong> Modular structure with reusable components</li>
-                    <li><strong>Database Operations:</strong> Connection management and query execution</li>
-                    <li><strong>User Experience:</strong> Responsive design and user feedback</li>
+                    <li><strong>Database Operations:</strong> Connection management and full CRUD query execution</li>
+                    <li><strong>User Experience:</strong> Responsive design, user feedback, and confirmation dialogs</li>
+                    <li><strong>JavaScript Integration:</strong> Dynamic interactions and modal management</li>
+                    <li><strong>Form Handling:</strong> Pre-population, validation, and secure submission</li>
                     <li><strong>Authentication Systems:</strong> User registration, login, and session management</li>
                     <li><strong>Password Security:</strong> Hashing, verification, and secure storage</li>
                     <li><strong>Session Management:</strong> User state persistence and security</li>
                     <li><strong>Access Control:</strong> Protecting pages and resources</li>
-                    <li><strong>Form Security:</strong> Validation, sanitization, and CSRF protection</li>
+                    <li><strong>SQL Operations:</strong> INSERT, SELECT, UPDATE, DELETE with prepared statements</li>
+                    <li><strong>Error Handling:</strong> Graceful error management and user-friendly messages</li>
                 </ul>
             </div>
         </section>
@@ -1602,59 +2250,59 @@ $user_email = $_SESSION['user_email'];
     <script>
     // Comprehensive code protection
     document.addEventListener('DOMContentLoaded', function() {
-        const protectedElements = document.querySelectorAll('.protected-code');
+        // const protectedElements = document.querySelectorAll('.protected-code');
 
-        protectedElements.forEach(function(element) {
-            // Disable right-click
-            element.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                return false;
-            });
+        // protectedElements.forEach(function(element) {
+        //     // Disable right-click
+        //     element.addEventListener('contextmenu', function(e) {
+        //         e.preventDefault();
+        //         return false;
+        //     });
 
-            // Disable text selection
-            element.addEventListener('selectstart', function(e) {
-                e.preventDefault();
-                return false;
-            });
+        //     // Disable text selection
+        //     element.addEventListener('selectstart', function(e) {
+        //         e.preventDefault();
+        //         return false;
+        //     });
 
-            // Disable drag
-            element.addEventListener('dragstart', function(e) {
-                e.preventDefault();
-                return false;
-            });
+        //     // Disable drag
+        //     element.addEventListener('dragstart', function(e) {
+        //         e.preventDefault();
+        //         return false;
+        //     });
 
-            // Disable keyboard shortcuts
-            element.addEventListener('keydown', function(e) {
-                if (e.ctrlKey && (e.key === 'c' || e.key === 'a' || e.key === 'x' || e.key === 'v')) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-        });
+        //     // Disable keyboard shortcuts
+        //     element.addEventListener('keydown', function(e) {
+        //         if (e.ctrlKey && (e.key === 'c' || e.key === 'a' || e.key === 'x' || e.key === 'v')) {
+        //             e.preventDefault();
+        //             return false;
+        //         }
+        //     });
+        // });
 
         // Global protection for all code blocks
-        document.addEventListener('contextmenu', function(e) {
-            if (e.target.closest('.code-block')) {
-                e.preventDefault();
-                return false;
-            }
-        });
+        // document.addEventListener('contextmenu', function(e) {
+        //     if (e.target.closest('.code-block')) {
+        //         e.preventDefault();
+        //         return false;
+        //     }
+        // });
 
-        document.addEventListener('keydown', function(e) {
-            if (e.target.closest('.code-block')) {
-                if (e.ctrlKey && (e.key === 'c' || e.key === 'a' || e.key === 'x')) {
-                    e.preventDefault();
-                    return false;
-                }
-            }
-        });
+        // document.addEventListener('keydown', function(e) {
+        //     if (e.target.closest('.code-block')) {
+        //         if (e.ctrlKey && (e.key === 'c' || e.key === 'a' || e.key === 'x')) {
+        //             e.preventDefault();
+        //             return false;
+        //         }
+        //     }
+        // });
 
-        document.addEventListener('selectstart', function(e) {
-            if (e.target.closest('.code-block')) {
-                e.preventDefault();
-                return false;
-            }
-        });
+        // document.addEventListener('selectstart', function(e) {
+        //     if (e.target.closest('.code-block')) {
+        //         e.preventDefault();
+        //         return false;
+        //     }
+        // });
     });
     </script>
 </body>
